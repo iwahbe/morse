@@ -24,9 +24,11 @@ fn decode_char<'a>(mut src: &'a [u8], place: &mut Place) -> (char, &'a [u8]) {
 
     loop {
         if src.is_empty() {
-            panic!(
-                "Invalid input: src is empty before char finished decoding. {idx} bytes decoded."
-            )
+            debug_assert!(
+                c == 0,
+                "Invalid input: src is empty before char finished decoding. {idx} bytes decoded: {c:x}"
+            );
+            break (' ', src);
         }
 
         // r is the 2 bytes we are using for the next sequence. It is already aligned.
@@ -102,13 +104,13 @@ fn decode_morse(c: u16) -> char {
         1023 => '0',
 
         // Punctuation
-        // _ => ':',
-        // _ => '.',
-        // _ => '?',
-        // _ => '/',
-        // _ => '-',
-        // _ => '(',
-        // _ => ')',
+        1003 => ':',
+        3822 => '.',
+        2810 => '?',
+        747 => '/',
+        3755 => '-',
+        763 => '(',
+        3835 => ')',
         _ => panic!("Unknown char {c:?}"),
     }
 }

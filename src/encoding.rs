@@ -83,13 +83,14 @@ fn encode_char(c: char, place: &mut Place, v: &mut Vec<u8>) {
         '0' => letter!(dah, dah, dah, dah, dah), // '-----'
 
         // Punctuation
-        // ':'=> -..--',
-        // '.'=> '.-.-.-',
-        // '?'=> '..--..',
-        // '/'=> '-..-.',
-        // '-'=> '-....-',
-        // '('=> '-.--.',
-        // ')'=> '-.--.-',
+        ':' => letter!(dah, dit, dit, dah, dah), // '-..--'
+        '.' => letter!(dit, dah, dit, dah, dit, dah), // '.-.-.-'
+        '?' => letter!(dit, dit, dah, dah, dit, dit), // '..--..'
+        '/' => letter!(dah, dit, dit, dah, dit), // '-..-.'
+        '-' => letter!(dah, dit, dit, dit, dit, dah), // '-....-'
+        '(' => letter!(dah, dit, dah, dah, dit), // '-.--.'
+        ')' => letter!(dah, dit, dah, dah, dit, dah), // '-.--.-'
+
         _ => panic!("Unknown char: {:?}", c),
     }
 }
