@@ -32,6 +32,7 @@ fn encode_char(c: char, place: &mut Place, v: &mut Vec<u8>) {
         }
     }
 
+    // letter calls emplace on a series
     macro_rules! letter {
         ($($typ:ident),+) => { {
             letter_helper!($($typ),+);

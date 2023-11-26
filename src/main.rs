@@ -35,6 +35,8 @@ use Direction::*;
 
 fn main() -> io::Result<()> {
     let arg = Args::parse();
+
+    // Read the src into a u8 buffer.
     let src = match arg.src {
         Some(src) => std::fs::read(src)?,
         None => {
@@ -44,6 +46,7 @@ fn main() -> io::Result<()> {
             v
         }
     };
+
     match arg.direction {
         TextToMorse => {
             let encoded = encode(
