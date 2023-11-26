@@ -71,16 +71,16 @@ fn encode_char(c: char, place: &mut Place, v: &mut Vec<u8>) {
         ' ' => letter!(char_end),
 
         // Numbers
-        // '1'=> '.----',
-        // '2'=> '..---',
-        // '3'=> '...--',
-        // '4'=> '....-',
-        // '5'=> '.....',
-        // '6'=> '-....',
-        // '7'=> '--...',
-        // '8'=> '---..',
-        // '9'=> '----.',
-        // '0'=> '-----',
+        '1' => letter!(dit, dah, dah, dah, dah), // '.----'
+        '2' => letter!(dit, dit, dah, dah, dah), // '..---'
+        '3' => letter!(dit, dit, dit, dah, dah), // '...--'
+        '4' => letter!(dit, dit, dit, dit, dah), // '....-'
+        '5' => letter!(dit, dit, dit, dit, dit), // '.....'
+        '6' => letter!(dah, dit, dit, dit, dit), // '-....'
+        '7' => letter!(dah, dah, dit, dit, dit), // '--...'
+        '8' => letter!(dah, dah, dah, dit, dit), // '---..'
+        '9' => letter!(dah, dah, dah, dah, dit), // '----.'
+        '0' => letter!(dah, dah, dah, dah, dah), // '-----'
 
         // Punctuation
         // ':'=> -..--',
@@ -89,13 +89,13 @@ fn encode_char(c: char, place: &mut Place, v: &mut Vec<u8>) {
         // '/'=> '-..-.',
         // '-'=> '-....-',
         // '('=> '-.--.',
-        //         ')'=> '-.--.-',
+        // ')'=> '-.--.-',
         _ => panic!("Unknown char: {:?}", c),
     }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-enum Place {
+pub(crate) enum Place {
     Zero,
     One,
     Two,
@@ -103,13 +103,26 @@ enum Place {
 }
 
 impl Place {
-    fn incr(self: Self) -> Self {
+    pub fn incr(self: Self) -> Self {
         match self {
             Place::Zero => Place::One,
             Place::One => Place::Two,
             Place::Two => Place::Three,
             Place::Three => Place::Zero,
         }
+    }
+
+    /// Get the 2 bits at the place.
+    ///
+    /// Possible return values are 0, 1, 2 and 3.
+    pub fn idx(self: Self, b: u8) -> u8 {
+        let shift = match self {
+            Place::Zero => 0,
+            Place::One => 2,
+            Place::Two => 4,
+            Place::Three => 6,
+        };
+        (b & (3 << shift)) >> shift
     }
 }
 

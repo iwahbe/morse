@@ -1,22 +1,29 @@
-use std::io::{Read, Write};
+use std::{
+    io::{self, Read, Write},
+    path::PathBuf,
+};
+
+mod decoding;
+mod encoding;
 
 use clap::{Parser, ValueEnum};
+use decoding::decode;
 use encoding::encode;
 
 /// A morse code translator
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version = "0.0.1", about, long_about = None)]
 struct Args {
     #[arg(value_enum)]
     direction: Direction,
 
     /// The source of the translation
     #[arg(short, long)]
-    src: Option<String>,
+    src: Option<PathBuf>,
 
     /// The destination of the translation
     #[arg(short, long)]
-    dst: Option<String>,
+    dst: Option<PathBuf>,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, ValueEnum)]
@@ -26,31 +33,36 @@ enum Direction {
 }
 use Direction::*;
 
-mod encoding;
-
-fn main() {
+fn main() -> io::Result<()> {
     let arg = Args::parse();
-    let src: String = match arg.src {
-        Some(src) => std::fs::read_to_string(src).expect("Failed to read file"),
+    let src = match arg.src {
+        Some(src) => std::fs::read(src)?,
         None => {
-            let mut s = String::new();
+            let mut v = Vec::new();
             let mut stdin = std::io::stdin().lock();
-            stdin.read_to_string(&mut s).expect("Failed to read stdin");
-            s
+            stdin.read_to_end(&mut v)?;
+            v
         }
     };
     match arg.direction {
         TextToMorse => {
-            let encoded = encode(src.trim());
-            eprintln!("Encoded: {encoded:?}");
+            let encoded = encode(
+                String::from_utf8(src)
+                    .expect("Source is not valid utf-8")
+                    .trim(),
+            );
             match arg.dst {
-                Some(dst) => std::fs::write(dst, encoded).expect("Failed to write file"),
-                None => std::io::stdout()
-                    .lock()
-                    .write_all(encoded.as_slice())
-                    .expect("Failed to write to stdout"),
+                Some(dst) => std::fs::write(dst, encoded),
+                None => std::io::stdout().lock().write_all(encoded.as_slice()),
             }
         }
-        MorseToText => todo!("Morse to text is unimplemented"),
+        MorseToText => {
+            let mut decoded = decode(src);
+            decoded.push('\n');
+            match arg.dst {
+                Some(dst) => std::fs::write(dst, decoded.as_bytes()),
+                None => std::io::stdout().lock().write_all(decoded.as_bytes()),
+            }
+        }
     }
 }
