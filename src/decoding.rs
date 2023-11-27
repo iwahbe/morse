@@ -1,4 +1,4 @@
-use crate::{Place, DAH, DIT, END};
+use crate::{Place, DAH, DIT, END, PAUSE};
 
 pub fn decode<T: AsRef<[u8]>>(src: T) -> String {
     let mut src = src.as_ref();
@@ -6,7 +6,9 @@ pub fn decode<T: AsRef<[u8]>>(src: T) -> String {
     let mut place = Place::Zero;
 
     while !src.is_empty() {
-        let (c, rest) = decode_char(src, &mut place);
+        let Some((c, rest)) = decode_char(src, &mut place) else {
+            break;
+        };
         s.push(c);
         src = rest;
     }
@@ -18,7 +20,7 @@ pub fn decode<T: AsRef<[u8]>>(src: T) -> String {
 ///
 /// The parsed character and un-parsed tape are returned while `place` is mutated in
 /// place.
-fn decode_char<'a>(mut src: &'a [u8], place: &mut Place) -> (char, &'a [u8]) {
+fn decode_char<'a>(mut src: &'a [u8], place: &mut Place) -> Option<(char, &'a [u8])> {
     // We will encode the next morse char into a u16: c. All morse chars we know how to
     // decode fit into a u16, but they don't fit into a u8.
     let mut c: u16 = 0;
@@ -32,7 +34,7 @@ fn decode_char<'a>(mut src: &'a [u8], place: &mut Place) -> (char, &'a [u8]) {
                 c == 0,
                 "Invalid input: src is empty before char finished decoding. {idx} bytes decoded: {c:x}"
             );
-            break (' ', src);
+            break Some((' ', src));
         }
 
         // r is the 2 bytes we are using for the next sequence. It is already aligned.
@@ -46,8 +48,12 @@ fn decode_char<'a>(mut src: &'a [u8], place: &mut Place) -> (char, &'a [u8]) {
 
         // If we have read some bytes and we encounter a stop sequence, break from the
         // loop and return the captured byte (along with the remaining tape).
-        if r == 0 && idx != 0 {
-            break (decode_morse(c), src);
+        if r == PAUSE && idx != 0 {
+            break Some((decode_morse(c), src));
+        }
+
+        if r == END {
+            break None;
         }
 
         c = c | ((r as u16) << idx); // Set r into c at the appropriate byte index.
@@ -70,7 +76,7 @@ fn decode_morse(c: u16) -> char {
         };
         (dit) => {(DIT as u16)};
         (dah) => {(DAH as u16)};
-        (char_end) => {(END as u16)};
+        (char_end) => {(PAUSE as u16)};
     }
 
     // decode creates a match statement where each pattern is a constant result of some

@@ -1,4 +1,4 @@
-use crate::{Place, DAH, DIT, END};
+use crate::{Place, DAH, DIT, END, PAUSE};
 
 /// Encode a string slice of letters to a compressed binary of morse code.
 pub fn encode<T: AsRef<str>>(src: T) -> Vec<u8> {
@@ -7,6 +7,7 @@ pub fn encode<T: AsRef<str>>(src: T) -> Vec<u8> {
     for c in src.as_ref().to_ascii_uppercase().chars() {
         encode_char(c, &mut place, &mut v)
     }
+    emplace(&mut place, &mut v, |src, place| fmt(END, src, place));
     v
 }
 
@@ -116,5 +117,5 @@ fn dah(src: u8, place: Place) -> u8 {
 }
 
 fn char_end(src: u8, place: Place) -> u8 {
-    fmt(END /* 00 */, src, place)
+    fmt(PAUSE /* 00 */, src, place)
 }
