@@ -1,3 +1,5 @@
+use crate::{Place, DAH, DIT, END};
+
 /// Encode a string slice of letters to a compressed binary of morse code.
 pub fn encode<T: AsRef<str>>(src: T) -> Vec<u8> {
     let mut v = Vec::new();
@@ -96,38 +98,6 @@ fn encode_char(c: char, place: &mut Place, v: &mut Vec<u8>) {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(crate) enum Place {
-    Zero,
-    One,
-    Two,
-    Three,
-}
-
-impl Place {
-    pub fn incr(self: Self) -> Self {
-        match self {
-            Place::Zero => Place::One,
-            Place::One => Place::Two,
-            Place::Two => Place::Three,
-            Place::Three => Place::Zero,
-        }
-    }
-
-    /// Get the 2 bits at the place.
-    ///
-    /// Possible return values are 0, 1, 2 and 3.
-    pub fn idx(self: Self, b: u8) -> u8 {
-        let shift = match self {
-            Place::Zero => 0,
-            Place::One => 2,
-            Place::Two => 4,
-            Place::Three => 6,
-        };
-        (b & (3 << shift)) >> shift
-    }
-}
-
 fn fmt(sym: u8, src: u8, place: Place) -> u8 {
     match place {
         Place::Zero => src | (sym << 0),
@@ -136,10 +106,6 @@ fn fmt(sym: u8, src: u8, place: Place) -> u8 {
         Place::Three => src | (sym << 6),
     }
 }
-
-pub(crate) const DIT: u8 = 2;
-pub(crate) const DAH: u8 = 3;
-pub(crate) const END: u8 = 0;
 
 fn dit(src: u8, place: Place) -> u8 {
     fmt(DIT /* 10 */, src, place)

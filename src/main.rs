@@ -3,12 +3,9 @@ use std::{
     path::PathBuf,
 };
 
-mod decoding;
-mod encoding;
-
 use clap::{Parser, ValueEnum};
-use decoding::decode;
-use encoding::encode;
+
+use morse::{decode, encode};
 
 /// A morse code translator
 #[derive(Parser, Debug)]

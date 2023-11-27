@@ -1,4 +1,4 @@
-use crate::encoding::{Place, DAH, DIT, END};
+use crate::{Place, DAH, DIT, END};
 
 pub fn decode<T: AsRef<[u8]>>(src: T) -> String {
     let mut src = src.as_ref();
