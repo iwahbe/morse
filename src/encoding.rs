@@ -24,7 +24,16 @@ where
     *place = place.incr();
 }
 
+/// Encode a character onto v, where the next place to put the character is described by place.
+///
+/// If `place` is `Zero`, then a new u8 will be pushed onto v.
+///
+/// Note: Encoding `c` might require pushing multiple bytes onto `v`.
 fn encode_char(c: char, place: &mut Place, v: &mut Vec<u8>) {
+    let dit = |src, place| fmt(DIT, src, place);
+    let dah = |src, place| fmt(DAH, src, place);
+    let char_end = |src, place| fmt(PAUSE, src, place);
+
     macro_rules! letter_helper {
         ($typ:ident) => {
             emplace(place, v, $typ)
@@ -106,16 +115,4 @@ fn fmt(sym: u8, src: u8, place: Place) -> u8 {
         Place::Two => src | (sym << 4),
         Place::Three => src | (sym << 6),
     }
-}
-
-fn dit(src: u8, place: Place) -> u8 {
-    fmt(DIT /* 10 */, src, place)
-}
-
-fn dah(src: u8, place: Place) -> u8 {
-    fmt(DAH /* 11 */, src, place)
-}
-
-fn char_end(src: u8, place: Place) -> u8 {
-    fmt(PAUSE /* 00 */, src, place)
 }
