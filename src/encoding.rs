@@ -137,14 +137,18 @@ fn fmt(sym: u8, src: u8, place: Place) -> u8 {
     }
 }
 
+pub(crate) const DIT: u8 = 2;
+pub(crate) const DAH: u8 = 3;
+pub(crate) const END: u8 = 0;
+
 fn dit(src: u8, place: Place) -> u8 {
-    fmt(2 /* 10 */, src, place)
+    fmt(DIT /* 10 */, src, place)
 }
 
 fn dah(src: u8, place: Place) -> u8 {
-    fmt(3 /* 11 */, src, place)
+    fmt(DAH /* 11 */, src, place)
 }
 
 fn char_end(src: u8, place: Place) -> u8 {
-    fmt(0 /* 00 */, src, place)
+    fmt(END /* 00 */, src, place)
 }

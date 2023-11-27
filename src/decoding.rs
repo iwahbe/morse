@@ -1,4 +1,4 @@
-use crate::encoding::Place;
+use crate::encoding::{Place, DAH, DIT, END};
 
 pub fn decode<T: AsRef<[u8]>>(src: T) -> String {
     let mut src = src.as_ref();
@@ -14,6 +14,10 @@ pub fn decode<T: AsRef<[u8]>>(src: T) -> String {
     s
 }
 
+/// Decode a morse character from the beginning of src (at byte location position place).
+///
+/// The parsed character and un-parsed tape are returned while `place` is mutated in
+/// place.
 fn decode_char<'a>(mut src: &'a [u8], place: &mut Place) -> (char, &'a [u8]) {
     // We will encode the next morse char into a u16: c. All morse chars we know how to
     // decode fit into a u16, but they don't fit into a u8.
@@ -59,58 +63,80 @@ fn decode_morse(c: u16) -> char {
     // While it is possible to deduce each number for a given symbol from parsing it's
     // representation, I found it easier to use guess and check.
 
-    match c {
-        // Space
-        0 => ' ',
+    // letter defines a representation (u16) for a char by combining `dit`s and `dah`s.
+    macro_rules! letter {
+        ($h:tt, $($sep:tt),+) => {
+            (letter!($h) | (letter!($($sep),+)<<2))
+        };
+        (dit) => {(DIT as u16)};
+        (dah) => {(DAH as u16)};
+        (char_end) => {(END as u16)};
+    }
 
-        // Letters
-        14 => 'A',
-        171 => 'B',
-        187 => 'C',
-        43 => 'D',
-        2 => 'E',
-        186 => 'F',
-        47 => 'G',
-        170 => 'H',
-        10 => 'I',
-        254 => 'J',
-        59 => 'K',
-        174 => 'L',
-        15 => 'M',
-        11 => 'N',
-        63 => 'O',
-        190 => 'P',
-        239 => 'Q',
-        46 => 'R',
-        42 => 'S',
-        3 => 'T',
-        58 => 'U',
-        234 => 'V',
-        62 => 'W',
-        235 => 'X',
-        251 => 'Y',
-        175 => 'Z',
+    // decode creates a match statement where each pattern is a constant result of some
+    // expression. This is necessary because match's pattern syntax conflicts with rust's
+    // normal expression syntax: `x | y` is `x` bit-or `y` in an expression context but
+    // `x` or `y` in a pattern context.
+    macro_rules! decode {
+        ($($name:ident => $num:expr, $result:expr),+) => { {
+            $(const $name: u16 = $num; )+
+                match c {
+                    $($name => $result,)+
+                    _ => panic!("Unknown char {c:?}"),
+                }
+        } }
+    }
+
+    decode! {
+        A => letter!(dit, dah), 'A',           // '.-'
+        B => letter!(dah, dit, dit, dit), 'B', // '-...'
+        C => letter!(dah, dit, dah, dit), 'C', // '-.-.'
+        D => letter!(dah, dit, dit), 'D',      // '-..'
+        E => letter!(dit), 'E',                // '.'
+        F => letter!(dit, dit, dah, dit), 'F', // '..-.'
+        G => letter!(dah, dah, dit), 'G',      // '--.'
+        H => letter!(dit, dit, dit, dit), 'H', // '....'
+        I => letter!(dit, dit), 'I',           // '..'
+        J => letter!(dit, dah, dah, dah), 'J', // '.---'
+        K => letter!(dah, dit, dah), 'K',      // '-.-',
+        L => letter!(dit, dah, dit, dit), 'L', // '.-..'
+        M => letter!(dah, dah), 'M',           // '--'
+        N => letter!(dah, dit), 'N',           // '-.'
+        O => letter!(dah, dah, dah), 'O',      // '---'
+        P => letter!(dit, dah, dah, dit), 'P', // '.--.'
+        Q => letter!(dah, dah, dit, dah), 'Q', // '--.-'n
+        R => letter!(dit, dah, dit), 'R',      // '.-.'
+        S => letter!(dit, dit, dit), 'S',      // '...'
+        T => letter!(dah), 'T',                // '-'
+        U => letter!(dit, dit, dah), 'U',      // '..-'
+        V => letter!(dit, dit, dit, dah), 'V', // '...-'
+        W => letter!(dit, dah, dah), 'W',      //  '.--'
+        X => letter!(dah, dit, dit, dah), 'X', // '-..-'
+        Y => letter!(dah, dit, dah, dah), 'Y', // '-.--'
+        Z => letter!(dah, dah, dit, dit), 'Z', // '--..'
+
+        // Space
+        SPACE => letter!(char_end), ' ',
 
         // Numbers
-        1022 => '1',
-        1018 => '2',
-        1002 => '3',
-        938 => '4',
-        682 => '5',
-        683 => '6',
-        687 => '7',
-        703 => '8',
-        767 => '9',
-        1023 => '0',
+        ONE => letter!(dit, dah, dah, dah, dah), '1',   // '.----'
+        TWO => letter!(dit, dit, dah, dah, dah), '2',   // '..---'
+        THREE => letter!(dit, dit, dit, dah, dah), '3', // '...--'
+        FOUR => letter!(dit, dit, dit, dit, dah), '4',  // '....-'
+        FIVE => letter!(dit, dit, dit, dit, dit), '5',  // '.....'
+        SIX => letter!(dah, dit, dit, dit, dit), '6',   // '-....'
+        SEVEN => letter!(dah, dah, dit, dit, dit), '7', // '--...'
+        EIGHT => letter!(dah, dah, dah, dit, dit), '8', // '---..'
+        NINE => letter!(dah, dah, dah, dah, dit), '9',  // '----.'
+        ZERO => letter!(dah, dah, dah, dah, dah), '0',  // '-----'
 
         // Punctuation
-        1003 => ':',
-        3822 => '.',
-        2810 => '?',
-        747 => '/',
-        3755 => '-',
-        763 => '(',
-        3835 => ')',
-        _ => panic!("Unknown char {c:?}"),
+        COLEN => letter!(dah, dit, dit, dah, dah), ':', // '-..--'
+        PERIOD => letter!(dit, dah, dit, dah, dit, dah), '.',// '.-.-.-'
+        QUESTION => letter!(dit, dit, dah, dah, dit, dit), '?',// '..--..'
+        SLASH => letter!(dah, dit, dit, dah, dit), '/',// '-..-.'
+        DASH => letter!(dah, dit, dit, dit, dit, dah), '-', // '-....-'
+        PAREN_OPEN => letter!(dah, dit, dah, dah, dit), '(',  // '-.--.'
+        PAREN_CLOSE => letter!(dah, dit, dah, dah, dit, dah), ')' // '-.--.-'
     }
 }
